@@ -3,6 +3,34 @@ const express = require("express");
 const app = express();
 const PORT = 3000;
 
+// ---------- HTTP status codes used in this API ----------
+const STATUS = {
+  OK: 200, // request succeeded
+  CREATED: 201, // new resource created
+  BAD_REQUEST: 400, // invalid or missing data from the client
+  NOT_FOUND: 404, // resource or route does not exist
+  CONFLICT: 409, // resource already exists (duplicate id)
+  INTERNAL_SERVER_ERROR: 500, // unexpected error on the server
+};
+
+const STATUS_TEXT = {
+  200: "OK",
+  201: "Created",
+  400: "Bad Request",
+  404: "Not Found",
+  409: "Conflict",
+  500: "Internal Server Error",
+};
+
+// Helper: sends a JSON response that always includes the status code and its name
+function sendResponse(res, statusCode, body) {
+  return res.status(statusCode).json({
+    statusCode: statusCode,
+    status: STATUS_TEXT[statusCode],
+    ...body,
+  });
+}
+
 // ---------- Middleware ----------
 app.use(express.json()); // parses JSON request bodies into req.body
 app.use(express.urlencoded({ extended: true })); // parses form data
@@ -24,7 +52,7 @@ function findStudentIndex(id) {
 }
 
 app.get("/", (req, res) => {
-  res.send("Server is running");
+  sendResponse(res, STATUS.OK, { success: true, message: "Server is running" });
 });
 
 // ---------- Task 2: Create a student record ----------
@@ -41,7 +69,7 @@ app.post("/api/students", (req, res) => {
   );
 
   if (missingFields.length > 0) {
-    return res.status(400).json({
+    return sendResponse(res, STATUS.BAD_REQUEST, {
       success: false,
       message: "Missing mandatory fields",
       missingFields: missingFields,
@@ -52,7 +80,7 @@ app.post("/api/students", (req, res) => {
 
   // Do not allow two students with the same id
   if (findStudentIndex(id) !== -1) {
-    return res.status(409).json({
+    return sendResponse(res, STATUS.CONFLICT, {
       success: false,
       message: `Student with id ${id} already exists`,
     });
@@ -61,7 +89,7 @@ app.post("/api/students", (req, res) => {
   const newStudent = { id, name, email, age };
   students.push(newStudent);
 
-  res.status(201).json({
+  sendResponse(res, STATUS.CREATED, {
     success: true,
     message: "Student created successfully",
     data: newStudent,
@@ -70,8 +98,9 @@ app.post("/api/students", (req, res) => {
 
 // ---------- Task 3: Get all students ----------
 app.get("/api/students", (req, res) => {
-  res.status(200).json({
+  sendResponse(res, STATUS.OK, {
     success: true,
+    message: "Students retrieved successfully",
     count: students.length,
     data: students,
   });
@@ -82,14 +111,15 @@ app.get("/api/students/:id", (req, res) => {
   const index = findStudentIndex(req.params.id);
 
   if (index === -1) {
-    return res.status(404).json({
+    return sendResponse(res, STATUS.NOT_FOUND, {
       success: false,
       message: `Student with id ${req.params.id} not found`,
     });
   }
 
-  res.status(200).json({
+  sendResponse(res, STATUS.OK, {
     success: true,
+    message: "Student retrieved successfully",
     data: students[index],
   });
 });
@@ -99,7 +129,7 @@ app.put("/api/students/:id", (req, res) => {
   const index = findStudentIndex(req.params.id);
 
   if (index === -1) {
-    return res.status(404).json({
+    return sendResponse(res, STATUS.NOT_FOUND, {
       success: false,
       message: `Student with id ${req.params.id} not found`,
     });
@@ -117,7 +147,7 @@ app.put("/api/students/:id", (req, res) => {
   );
 
   if (fieldsToUpdate.length === 0) {
-    return res.status(400).json({
+    return sendResponse(res, STATUS.BAD_REQUEST, {
       success: false,
       message: "Provide at least one field to update: name, email or age",
     });
@@ -128,7 +158,7 @@ app.put("/api/students/:id", (req, res) => {
     students[index][field] = body[field];
   });
 
-  res.status(200).json({
+  sendResponse(res, STATUS.OK, {
     success: true,
     message: "Student updated successfully",
     data: students[index],
@@ -140,7 +170,7 @@ app.delete("/api/students/:id", (req, res) => {
   const index = findStudentIndex(req.params.id);
 
   if (index === -1) {
-    return res.status(404).json({
+    return sendResponse(res, STATUS.NOT_FOUND, {
       success: false,
       message: `Student with id ${req.params.id} not found`,
     });
@@ -149,7 +179,7 @@ app.delete("/api/students/:id", (req, res) => {
   // splice removes the student from the array and returns it
   const deletedStudent = students.splice(index, 1)[0];
 
-  res.status(200).json({
+  sendResponse(res, STATUS.OK, {
     success: true,
     message: "Student deleted successfully",
     data: deletedStudent,
@@ -158,15 +188,26 @@ app.delete("/api/students/:id", (req, res) => {
 
 // ---------- 404 handler for unknown routes ----------
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: "Route not found" });
+  sendResponse(res, STATUS.NOT_FOUND, {
+    success: false,
+    message: `Route ${req.method} ${req.url} not found`,
+  });
 });
 
-// ---------- Error handler for invalid JSON ----------
+// ---------- Error handler: invalid JSON (400) and server errors (500) ----------
 app.use((err, req, res, next) => {
   if (err.type === "entity.parse.failed") {
-    return res.status(400).json({ success: false, message: "Invalid JSON format" });
+    return sendResponse(res, STATUS.BAD_REQUEST, {
+      success: false,
+      message: "Invalid JSON format",
+    });
   }
-  res.status(500).json({ success: false, message: "Internal server error" });
+
+  console.error(err);
+  sendResponse(res, STATUS.INTERNAL_SERVER_ERROR, {
+    success: false,
+    message: "Internal server error",
+  });
 });
 
 app.listen(PORT, () => {
