@@ -14,4 +14,8 @@ npm start
 Server runs on http://localhost:3000
 
 ## API
-POST /api/students - create a student record (id, name, email, course, age are required)
+- POST /api/students - create a student (id, name, email, age are required)
+- GET /api/students - get all students
+- GET /api/students/:id - get one student by id
+- PUT /api/students/:id - update a student's name, email or age
+- DELETE /api/students/:id - delete a studentd
