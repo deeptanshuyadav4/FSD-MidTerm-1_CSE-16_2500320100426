@@ -1,0 +1,24 @@
+{
+  "name": "fsd-midterm-1_cse-16_25003201000426",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deeptanshuyadav4/FSD-MidTerm-1_CSE-16_25003201000426.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/deeptanshuyadav4/FSD-MidTerm-1_CSE-16_25003201000426/issues"
+  },
+  "homepage": "https://github.com/deeptanshuyadav4/FSD-MidTerm-1_CSE-16_25003201000426#readme",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}
